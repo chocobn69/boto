@@ -306,6 +306,23 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
+    def get_checker_ip_ranges(self):
+        """
+        Return a list of Route53 healthcheck IP ranges
+        """
+        uri = '/%s/checkeripranges' % self.Version
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='CheckerIpRanges', item_marker=('member',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+
     def delete_health_check(self, health_check_id):
         """
         Delete a health check
@@ -521,12 +538,18 @@ class Route53Connection(AWSAuthConnection):
         if response.status == 400:
             code = response.getheader('Code')
 
-            if code and 'PriorRequestNotComplete' in code:
+            if code:
                 # This is a case where we need to ignore a 400 error, as
                 # Route53 returns this. See
                 # http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html
+                if 'PriorRequestNotComplete' in code:
+                    error = 'PriorRequestNotComplete'
+                elif 'Throttling' in code:
+                    error = 'Throttling'
+                else:
+                    return status
                 msg = "%s, retry attempt %s" % (
-                    'PriorRequestNotComplete',
+                    error,
                     i
                 )
                 next_sleep = min(random.random() * (2 ** i),

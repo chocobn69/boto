@@ -64,6 +64,10 @@ class StepId(Arg):
     pass
 
 
+class SupportedProduct(Arg):
+    pass
+
+
 class JobFlowStepList(EmrObject):
     def __ini__(self, connection=None):
         self.connection = connection
@@ -190,6 +194,9 @@ class JobFlow(EmrObject):
         elif name == 'BootstrapActions':
             self.bootstrapactions = ResultSet([('member', BootstrapAction)])
             return self.bootstrapactions
+        elif name == 'SupportedProducts':
+            self.supported_products = ResultSet([('member', SupportedProduct)])
+            return self.supported_products
         else:
             return None
 
@@ -201,6 +208,11 @@ class ClusterTimeline(EmrObject):
         'EndDateTime'
     ])
 
+class ClusterStateChangeReason(EmrObject):
+    Fields = set([
+        'Code',
+        'Message'
+    ])
 
 class ClusterStatus(EmrObject):
     Fields = set([
@@ -217,6 +229,9 @@ class ClusterStatus(EmrObject):
         if name == 'Timeline':
             self.timeline = ClusterTimeline()
             return self.timeline
+        elif name == 'StateChangeReason':
+            self.statechangereason = ClusterStateChangeReason()
+            return self.statechangereason
         else:
             return None
 

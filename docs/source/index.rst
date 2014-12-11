@@ -68,11 +68,14 @@ Currently Supported Services
 
   * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`) (Python 3)
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`) (Python 3)
+  * CloudSearch Domain --(:doc:`API Reference <ref/cloudsearchdomain>`) (Python 3)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`) (Python 3)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`) (Python 3)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`) (Python 3)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
+  * Amazon Cognito Identity -- (:doc:`API Reference <ref/cognito-identity>`) (Python 3)
+  * Amazon Cognito Sync -- (:doc:`API Reference <ref/cognito-sync>`) (Python 3)
 
 * **Monitoring**
 
@@ -82,6 +85,7 @@ Currently Supported Services
 * **Networking**
 
   * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`) (Python 3)
+  * Route 53 Domains -- (:doc:`API Reference <ref/route53domains>`) (Python 3)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`) (Python 3)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`) (Python 3)
   * AWS Direct Connect (Python 3)
@@ -132,6 +136,8 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.34.0
+   releasenotes/v2.33.0
    releasenotes/v2.32.1
    releasenotes/v2.32.0
    releasenotes/v2.31.1

@@ -1,14 +1,14 @@
 ####
 boto
 ####
-boto 2.32.1
+boto 2.34.0
 
-Released: 04-Aug-2014
+Released: 23-Oct-2014
 
-.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
 
-.. image:: https://pypip.in/d/boto/badge.png
+.. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/
 
 ************
@@ -62,11 +62,14 @@ At the moment, boto supports:
 * Application Services
 
   * Amazon CloudSearch (Python 3)
+  * Amazon CloudSearch Domain (Python 3)
   * Amazon Elastic Transcoder (Python 3)
   * Amazon Simple Workflow Service (SWF) (Python 3)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS) (Python 3)
   * Amazon Simple Email Service (SES) (Python 3)
+  * Amazon Cognito Identity (Python 3)
+  * Amazon Cognito Sync (Python 3)
 
 * Monitoring
 
@@ -76,6 +79,7 @@ At the moment, boto supports:
 * Networking
 
   * Amazon Route53 (Python 3)
+  * Amazon Route 53 Domains (Python 3)
   * Amazon Virtual Private Cloud (VPC) (Python 3)
   * Elastic Load Balancing (ELB) (Python 3)
   * AWS Direct Connect (Python 3)
@@ -176,7 +180,7 @@ boto config file.  See `this`_ for details.
 .. _github.com: http://github.com/boto/boto
 .. _Online documentation: http://docs.pythonboto.org
 .. _Python Cheese Shop: http://pypi.python.org/pypi/boto
-.. _this: http://code.google.com/p/boto/wiki/BotoConfig
+.. _this: http://docs.pythonboto.org/en/latest/boto_config_tut.html
 .. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
 .. _neo: https://github.com/boto/boto/tree/neo
 .. _boto-users Google Group: https://groups.google.com/forum/?fromgroups#!forum/boto-users

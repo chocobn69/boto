@@ -25,8 +25,9 @@ import socket
 from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
+from boto import UserAgent
 from boto.compat import json, parse_qs
-from boto.connection import AWSQueryConnection, AWSAuthConnection
+from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 
@@ -72,6 +73,7 @@ class MockAWSService(AWSQueryConnection):
     """
 
     APIVersion = '2012-01-01'
+
     def _required_auth_capability(self):
         return ['sign-v2']
 
@@ -94,6 +96,7 @@ class MockAWSService(AWSQueryConnection):
                                     security_token,
                                     validate_certs=validate_certs,
                                     profile_name=profile_name)
+
 
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
@@ -182,8 +185,9 @@ class TestAWSAuthConnection(unittest.TestCase):
             'testhost',
             aws_access_key_id='access_key',
             aws_secret_access_key='secret')
-        request = conn.build_base_http_request(method='POST', path='/',
-            auth_path=None, params=None, headers=None, data='', host=None)
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
         conn.set_host_header(request)
         self.assertEqual(request.headers['Host'], 'testhost')
 
@@ -193,15 +197,17 @@ class TestAWSAuthConnection(unittest.TestCase):
             aws_access_key_id='access_key',
             aws_secret_access_key='secret',
             port=8773)
-        request = conn.build_base_http_request(method='POST', path='/',
-            auth_path=None, params=None, headers=None, data='', host=None)
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
         conn.set_host_header(request)
         self.assertEqual(request.headers['Host'], 'testhost:8773')
 
+
 class V4AuthConnection(AWSAuthConnection):
     def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id,
-            aws_secret_access_key, port=port)
+        AWSAuthConnection.__init__(
+            self, host, aws_access_key_id, aws_secret_access_key, port=port)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -209,14 +215,16 @@ class V4AuthConnection(AWSAuthConnection):
 
 class TestAWSQueryConnection(unittest.TestCase):
     def setUp(self):
-        self.region = RegionInfo(name='cc-zone-1',
-                            endpoint='mockservice.cc-zone-1.amazonaws.com',
-                            connection_cls=MockAWSService)
+        self.region = RegionInfo(
+            name='cc-zone-1',
+            endpoint='mockservice.cc-zone-1.amazonaws.com',
+            connection_cls=MockAWSService)
 
         HTTPretty.enable()
 
     def tearDown(self):
         HTTPretty.disable()
+
 
 class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
     def test_query_connection_basis(self):
@@ -263,7 +271,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                    aws_secret_access_key='secret',
                                    proxy="NON_EXISTENT_HOSTNAME",
                                    proxy_port="3128",
-                                   is_secure = False)
+                                   is_secure=False)
 
         resp = conn.make_request('myCmd',
                                  {'par1': 'foo', 'par2': 'baz'},
@@ -379,6 +387,26 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  'POST')
         self.assertEqual(resp.read(), b"{'test': 'success'}")
 
+    def test_unhandled_exception(self):
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/temp_exception/' % self.region.endpoint,
+                               responses=[])
+
+        def fake_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+                      source_address=None):
+            raise socket.timeout('fake error')
+
+        socket.create_connection = fake_connection
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret')
+        conn.num_retries = 0
+        with self.assertRaises(socket.error):
+            resp = conn.make_request('myCmd1',
+                                     {'par1': 'foo', 'par2': 'baz'},
+                                     '/temp_exception/',
+                                     'POST')
+
     def test_connection_close(self):
         """Check connection re-use after close header is received"""
         HTTPretty.register_uri(HTTPretty.POST,
@@ -453,7 +481,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
                                content_type='text/xml')
 
         conn = self.region.connect(aws_access_key_id='access_key',
-                aws_secret_access_key='secret')
+                                   aws_secret_access_key='secret')
         with self.assertRaises(BotoServerError):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
@@ -472,6 +500,30 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
                                    'status')
+
+
+class TestHTTPRequest(unittest.TestCase):
+    def test_user_agent_not_url_encoded(self):
+        headers = {'Some-Header': u'should be url encoded',
+                   'User-Agent': UserAgent}
+        request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
+                              None, {}, headers, 'Body')
+        mock_connection = mock.Mock()
+
+        # Create a method that preserves the headers at the time of
+        # authorization.
+        def mock_add_auth(req, **kwargs):
+            mock_connection.headers_at_auth = req.headers.copy()
+
+        mock_connection._auth_handler.add_auth = mock_add_auth
+
+        request.authorize(mock_connection)
+        # Ensure the headers at authorization are as expected i.e.
+        # the user agent header was not url encoded but the other header was.
+        self.assertEqual(mock_connection.headers_at_auth,
+                         {'Some-Header': 'should%20be%20url%20encoded',
+                          'User-Agent': UserAgent})
+
 
 if __name__ == '__main__':
     unittest.main()

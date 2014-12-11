@@ -54,7 +54,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
     def test_typical_400(self):
         self.set_http_response(status_code=400, header=[
-            ['Code', 'Throttling'],
+            ['Code', 'AccessDenied'],
         ])
 
         with self.assertRaises(DNSServerError) as err:
@@ -62,11 +62,22 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
         self.assertTrue('It failed.' in str(err.exception))
 
-    @mock.patch('time.sleep')
-    def test_retryable_400(self, sleep_mock):
+    def test_retryable_400_prior_request_not_complete(self):
+        # Test ability to retry on ``PriorRequestNotComplete``.
         self.set_http_response(status_code=400, header=[
             ['Code', 'PriorRequestNotComplete'],
         ])
+        self.do_retry_handler()
+
+    def test_retryable_400_throttling(self):
+        # Test ability to rety on ``Throttling``.
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'Throttling'],
+        ])
+        self.do_retry_handler()
+
+    @mock.patch('time.sleep')
+    def do_retry_handler(self, sleep_mock):
 
         def incr_retry_handler(func):
             def _wrapper(*args, **kwargs):
@@ -516,6 +527,36 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
         self.assertEqual(hc_resp['ResourcePath'], '/health_check')
         self.assertEqual(hc_resp['SearchString'], 'OK')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
+
+
+@attr(route53=True)
+class TestGetCheckerIpRanges(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def default_body(self):
+        return b"""
+<GetCheckerIpRangesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <CheckerIpRanges>
+      <member>54.183.255.128/26</member>
+      <member>54.228.16.0/26</member>
+      <member>54.232.40.64/26</member>
+      <member>177.71.207.128/26</member>
+      <member>176.34.159.192/26</member>
+   </CheckerIpRanges>
+</GetCheckerIpRangesResponse>
+        """
+
+    def test_get_checker_ip_ranges(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_checker_ip_ranges()
+        ip_ranges = response['GetCheckerIpRangesResponse']['CheckerIpRanges']
+
+        self.assertEqual(len(ip_ranges), 5)
+        self.assertIn('54.183.255.128/26', ip_ranges)
+        self.assertIn('54.228.16.0/26', ip_ranges)
+        self.assertIn('54.232.40.64/26', ip_ranges)
+        self.assertIn('177.71.207.128/26', ip_ranges)
+        self.assertIn('176.34.159.192/26', ip_ranges)
 
 
 @attr(route53=True)
